@@ -34,6 +34,14 @@ const TextInputMask = forwardRef<Handles, TextInputMaskProps>(({
 }, ref) => {
   const input = useRef<TextInput>(null)
   const [ maskedValue, setMaskedValue ] = useState<string>()
+  const didLayout = useRef(false);
+  const handleLayout = () => {
+    didLayout.current = true;
+    const nodeId = findNodeHandle(input.current);
+    if (primaryFormat && nodeId) {
+      setMask(nodeId, primaryFormat, { affineFormats, affinityCalculationStrategy, customNotations, autocomplete, autoskip, rightToLeft });
+    }
+  };
 
   useEffectAsync(async () => {
     const initialValue = value ?? defaultValue
@@ -57,9 +65,11 @@ const TextInputMask = forwardRef<Handles, TextInputMaskProps>(({
   }, [value])
 
   useEffect(() => {
-    const nodeId = findNodeHandle(input.current)
-    if (primaryFormat && nodeId) {
-      setMask(nodeId, primaryFormat, { affineFormats, affinityCalculationStrategy, customNotations, autocomplete, autoskip, rightToLeft })
+    if (didLayout.current) {
+      const nodeId = findNodeHandle(input.current)
+      if (primaryFormat && nodeId) {
+        setMask(nodeId, primaryFormat, { affineFormats, affinityCalculationStrategy, customNotations, autocomplete, autoskip, rightToLeft })
+      }
     }
   }, [primaryFormat])
 
@@ -78,6 +88,7 @@ const TextInputMask = forwardRef<Handles, TextInputMaskProps>(({
           ref={input}
           value={maskedValue}
           multiline={primaryFormat && Platform.OS === 'ios' ? false : multiline}
+          onLayout={handleLayout}
           onChangeText={async (masked) => {
             setMaskedValue(masked)
             if (primaryFormat) {
